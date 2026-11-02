@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EXPLORERS: Shadows of Time</title>
+<style>
+:root{--cyan:#70f4e8;--gold:#ffd27a;--ink:#06131d;--panel:rgba(7,24,36,.92);--line:rgba(112,244,232,.25)}
+*{box-sizing:border-box}body{margin:0;background:#04111b;color:#eaf7fb;font:15px/1.5 Inter,system-ui,Segoe UI,Arial;overflow:hidden}
+button,select{font:inherit}button{border:1px solid #69e7dd;background:#123647;color:#eaffff;padding:11px 17px;border-radius:9px;cursor:pointer;font-weight:700;transition:.15s}button:hover{background:#1c5261;transform:translateY(-1px)}button.primary{background:var(--cyan);color:#06202a;border-color:var(--cyan)}button:disabled{opacity:.4;cursor:not-allowed}
+.hidden{display:none!important}.screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#loading{background:radial-gradient(ellipse at center,#12354a,#020912 70%);flex-direction:column;text-align:center;z-index:10}
+.logo{font-size:clamp(32px,6vw,72px);letter-spacing:.22em;font-weight:900;margin:0;color:#eaffff;text-shadow:0 0 25px #39d9e4}.sub{letter-spacing:.38em;color:var(--cyan);font-size:13px}
+.loadbar{width:min(480px,80vw);height:8px;background:#18303d;border-radius:20px;overflow:hidden;margin:26px 0 8px}.loadfill{height:100%;width:0;background:linear-gradient(90deg,#41a9ce,var(--cyan));transition:width .08s}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:clamp(22px,4vw,42px);width:min(760px,92vw);box-shadow:0 25px 80px #0009;backdrop-filter:blur(12px)}
+.kicker{color:var(--cyan);font-size:12px;letter-spacing:.2em;font-weight:800}.card h2{font-size:clamp(25px,4vw,40px);line-height:1.1;margin:10px 0 16px}.card p{color:#c5d8e1}.choice{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+#game{display:block;background:#03101a}.hud{position:absolute;z-index:3;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;gap:10px;pointer-events:none}.hud>*{pointer-events:auto}.hudpanel{background:#061a27e8;border:1px solid var(--line);border-radius:12px;padding:10px 14px;box-shadow:0 8px 30px #0005}.meter{width:150px;height:7px;background:#253b46;border-radius:8px;overflow:hidden;margin-top:5px}.meter span{display:block;height:100%;background:var(--cyan);width:100%}
+#world{position:absolute;inset:0;overflow:hidden;background:linear-gradient(#07364b,#062238 55%,#03121e);transition:filter .4s}
+#world:before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,transparent 20%,#0008 100%),repeating-linear-gradient(110deg,transparent 0 90px,#ffffff06 91px 92px)}
+#world.land{background:linear-gradient(#7c9c91,#345d51 48%,#142d2b)}#world.mine{background:linear-gradient(#453c36,#211d1a 60%,#0b0b0b)}
+#terrain{position:absolute;inset:0;background-image:radial-gradient(circle at 20% 20%,#b4ffff12 0 2px,transparent 3px),radial-gradient(circle at 70% 60%,#b4ffff10 0 3px,transparent 4px);background-size:130px 110px}
+.entity{position:absolute;transform:translate(-50%,-50%);user-select:none;filter:drop-shadow(0 5px 8px #0008)}
+#player{font-size:40px;z-index:2;transition:transform .05s} .artifact{font-size:32px;cursor:pointer;animation:float 2.4s ease-in-out infinite}.artifact:hover{filter:drop-shadow(0 0 12px var(--gold))}@keyframes float{50%{transform:translate(-50%,-57%)}}
+#predator{font-size:45px;z-index:2}.exit{font-size:35px;color:var(--gold);left:94%;top:50%;}.label{font-size:10px;letter-spacing:.1em;color:#bde7ef;text-align:center;white-space:nowrap}
+#map{position:absolute;right:18px;bottom:18px;width:150px;height:110px;border:1px solid #8af4e755;border-radius:10px;background:#061a27cc;z-index:3}
+#map canvas{width:100%;height:100%}
+#guide{position:absolute;bottom:18px;left:18px;width:min(420px,calc(100vw - 210px));z-index:4;background:#061a27e8;border:1px solid var(--line);border-radius:12px;padding:12px 16px}
+#guide strong{color:var(--cyan);font-size:11px;letter-spacing:.15em}#guide p{margin:4px 0 0;color:#d4e8ee}
+#actionbar{position:absolute;top:80px;right:18px;display:flex;gap:8px;z-index:4;flex-direction:column}
+#modal{position:absolute;inset:0;background:#0009;z-index:8;display:flex;align-items:center;justify-content:center;padding:18px}
+.modalcard{width:min(500px,95vw);background:#081d2b;border:1px solid #6df1e6;border-radius:16px;padding:25px;box-shadow:0 20px 70px #000b}
+.modalcard h3{margin:4px 0 10px;font-size:25px}.tag{display:inline-block;border:1px solid #477080;border-radius:20px;padding:3px 9px;font-size:11px;color:#aeece9}
+#result{z-index:12;background:#020a11}
+@media(max-width:650px){.hud{flex-wrap:wrap}.hudpanel{padding:7px 10px}.meter{width:100px}#guide{width:calc(100vw - 36px);bottom:140px}#map{width:120px;height:90px}#actionbar{top:130px}}
+</style>
+</head>
+<body>
+<section id="loading" class="screen"><p class="sub">TEMPORAL FIELD UNIT // 07</p><h1 class="logo">EXPLORERS</h1><div class="sub">SHADOWS OF TIME</div><div class="loadbar"><div id="loadfill" class="loadfill"></div></div><div id="loadtext">INITIALIZING MISSION… 0%</div></section>
+<section id="intro" class="screen hidden"><div class="card"><div class="kicker">FIELD BRIEFING // ECHO AI</div><h2>Sunken Temple of Varuna</h2><p>Explorer, the temple is fractured across three timelines. Recover its three temporal artifacts, learn what changed, and reach extraction before your oxygen runs out.</p><p><b>Controls:</b> WASD / arrow keys to move. Inspect glowing discoveries by walking close and pressing <b>E</b>. Switch timelines to reveal different clues. Avoid the guardian.</p><div class="choice"><button class="primary" onclick="showGear()">Prepare equipment →</button></div></div></section>
+<section id="gear" class="screen hidden"><div class="card"><div class="kicker">LOADOUT // MISSION PREP</div><h2>Choose your field kit</h2><p>Each kit changes how you approach the expedition. For this prototype, the dive kit is recommended.</p><div class="choice"><button onclick="chooseGear('Diver','🤿',1)">Diver · Oxygen +25</button><button onclick="chooseGear('Scout','🧭',0)">Scout · Faster movement</button><button onclick="chooseGear('Archivist','🔎',0)">Archivist · Extra scan hint</button></div><p id="gearinfo">Select a kit to continue.</p><button class="primary" id="launch" disabled onclick="launch()">Enter the site</button></div></section>
+<section id="game" class="hidden"><div id="world"><div id="terrain"></div><div id="player" class="entity">🤿</div><div id="predator" class="entity">🦈</div><div id="exit" class="entity exit">⛩️</div></div>
+<div class="hud"><div class="hudpanel"><b>VARUNA // <span id="timelineName">PRESENT</span></b><div class="meter"><span id="oxygenbar"></span></div><small>O₂ <span id="oxygen">100</span>%</small></div><div class="hudpanel">ARTIFACTS <b id="count">0</b>/3<br><small>RESEARCH <span id="score">0</span> XP</small></div><div class="hudpanel"><select id="timeline" aria-label="Timeline"><option>Past</option><option selected>Present</option><option>Future</option></select> <button onclick="showInventory()">Pack</button></div></div>
+<div id="actionbar"><button onclick="scan()">⌖ Scan (E)</button><button onclick="showMapInfo()">⌁ Map intel</button></div>
+<div id="guide"><strong>ECHO // GUIDE AI</strong><p id="guidetext">The temple is quiet. Keep moving, and watch your oxygen.</p></div>
+<div id="map"><canvas id="minimap" width="300" height="220"></canvas></div>
+<div id="modal" class="hidden"><div class="modalcard"><div class="tag" id="modaltype">DISCOVERY</div><h3 id="modalname">Unknown</h3><p id="modaldesc"></p><div class="choice" id="modalchoices"></div></div></div>
+</section>
+<section id="result" class="screen hidden"><div class="card"><div class="kicker">EXPEDITION REPORT</div><h2 id="resulttitle">Mission complete</h2><p id="resulttext"></p><p id="resultmeta"></p><div class="choice"><button class="primary" onclick="location.reload()">Run another expedition ↻</button></div></div></section>
+<script>
+const $=id=>document.getElementById(id);
+let gear=null,player={x:12,y:76},enemy={x:84,y:25},oxygen=100,items=[],xp=0,gameOn=false,ended=false,last=0,elapsed=0,scanCooldown=0;
+const discoveries=[
+ {id:'herb',x:25,y:28,icon:'🌿',name:'Abyssal Kelp',type:'USEFUL',desc:'A resilient kelp with oxygen-binding enzymes. ECHO confirms it can restore 25 oxygen.',timeline:'Past',effect:'oxygen'},
+ {id:'coral',x:49,y:72,icon:'🪸',name:'Glass Coral',type:'CAUTION',desc:'Beautiful, brittle and mildly toxic. Its surface spores irritate exposed skin. Photograph it; do not pocket it.',timeline:'Present',effect:'danger'},
+ {id:'crystal',x:72,y:35,icon:'💎',name:'Chrono Prism',type:'ARTIFACT',desc:'A prism that resonates with the Future timeline. Secure it to stabilize the temple map.',timeline:'Future',effect:'artifact'},
+ {id:'relic',x:34,y:83,icon:'🏺',name:'Ceremonial Vessel',type:'ARTIFACT',desc:'An intact vessel from the temple’s founding era. Its inscription hints at the extraction route.',timeline:'Past',effect:'artifact'},
+ {id:'tablet',x:80,y:76,icon:'📜',name:'Tidal Tablet',type:'ARTIFACT',desc:'The tablet records a future flood cycle. Its data completes the temporal survey.',timeline:'Present',effect:'artifact'}
+];
+const world=$('world'),playerEl=$('player'),enemyEl=$('predator'),exitEl=$('exit');
+discoveries.forEach(d=>{let el=document.createElement('div');el.className='entity artifact';el.id='d-'+d.id;el.textContent=d.icon;el.style.left=d.x+'%';el.style.top=d.y+'%';el.title='Discovery — approach and press E';world.appendChild(el)});
+function screen(id){['loading','intro','gear','game','result'].forEach(s=>$(s).classList.add('hidden'));$(id).classList.remove('hidden')}
+let lp=0;let loadTimer=setInterval(()=>{lp+=2; $('loadfill').style.width=lp+'%';$('loadtext').textContent='INITIALIZING MISSION… '+lp+'%';if(lp>=100){clearInterval(loadTimer);setTimeout(()=>screen('intro'),250)}},35);
+function showGear(){screen('gear')}
+function chooseGear(name,icon,bonus){gear={name,icon,bonus};$('gearinfo').textContent=name+' kit selected. '+(bonus?'Extra oxygen reserve added.':name==='Scout'?'Movement speed increased.':'Scanner highlights clues more clearly.');$('launch').disabled=false}
+function launch(){screen('game');oxygen=100+(gear.bonus?25:0);playerEl.textContent=gear.icon;player={x:12,y:76};enemy={x:84,y:25};gameOn=true;ended=false;last=performance.now();render();guide('Mission clock started. Recover three artifacts, then reach the temple gate. The guardian reacts to your movement.');requestAnimationFrame(loop)}
+function guide(t){$('guidetext').textContent=t}
+function render(){playerEl.style.left=player.x+'%';playerEl.style.top=player.y+'%';enemyEl.style.left=enemy.x+'%';enemyEl.style.top=enemy.y+'%';$('oxygen').textContent=Math.max(0,Math.ceil(oxygen));$('oxygenbar').style.width=Math.max(0,oxygen)+'%';$('count').textContent=items.filter(i=>i.effect==='artifact').length;$('score').textContent=xp;$('timelineName').textContent=$('timeline').value.toUpperCase();drawMap()}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+function nearest(){return discoveries.filter(d=>!items.some(i=>i.id===d.id)&&$('d-'+d.id)).map(d=>({d,el:$('d-'+d.id),distance:dist(player,{x:d.x,y:d.y})})).sort((a,b)=>a.distance-b.distance)[0]}
+function interact(){if(!gameOn||ended||!$('modal').classList.contains('hidden'))return;let n=nearest();if(n&&n.distance<9){openDiscovery(n.d)}else guide('No discovery in reach. Use Scan to locate nearby signals.')}
+function openDiscovery(d){$('modaltype').textContent=d.type;$('modalname').textContent=d.name;$('modaldesc').textContent=d.desc;$('modalchoices').innerHTML='';if(d.effect==='danger')addChoice('Leave untouched',()=>closeModal());else addChoice(d.effect==='artifact'?'Secure artifact':'Collect sample',()=>collect(d));addChoice('Share finding',()=>{closeModal();guide('Finding shared with expedition team: '+d.name+'. Team members can now see its location and field notes.')});addChoice('Close',closeModal);$('modal').classList.remove('hidden')}
+function addChoice(label,fn){let b=document.createElement('button');b.textContent=label;b.onclick=fn;$('modalchoices').appendChild(b)}
+function closeModal(){$('modal').classList.add('hidden')}
+function collect(d){items.push(d);xp+=d.effect==='artifact'?100:25;let el=$('d-'+d.id);if(el)el.remove();closeModal();if(d.effect==='oxygen'){oxygen=Math.min(100+(gear.bonus?25:0),oxygen+25);guide('Sample secured. Oxygen restored by 25%. Keep an eye on the guardian.')}else guide(d.name+' secured. Temporal evidence added to your collection.');if(items.filter(i=>i.effect==='artifact').length===3)guide('All three artifacts secured. Reach the temple gate at the eastern edge for extraction.');render()}
+function scan(){if(!gameOn||ended)return;let n=nearest();if(n){guide(n.distance<9?'Discovery in reach — press E to inspect.':'Signal detected '+Math.round(n.distance)+'m away: '+n.d.name+'.')}else guide('No uncollected signals. Check your timeline or head to extraction.')}
+function showInventory(){let names=items.length?items.map(i=>i.name).join(', '):'No items collected yet.';$('modaltype').textContent='FIELD PACK';$('modalname').textContent='Collected evidence';$('modaldesc').textContent=names+' | XP: '+xp+'. Use collected samples during this expedition; artifacts are required for extraction.';$('modalchoices').innerHTML='';addChoice('Close',closeModal);$('modal').classList.remove('hidden')}
+function showMapInfo(){guide('Map intel: Past reveals the vessel and kelp. Present shows the tablet and toxic coral. Future reveals the Chrono Prism. Switch timelines to identify what belongs where.')}
+$('timeline').addEventListener('change',()=>{let t=$('timeline').value;world.className=t==='Past'?'land':t==='Future'?'mine':'';discoveries.forEach(d=>{let el=$('d-'+d.id);if(el)el.style.opacity=d.timeline===t?'1':'.35'});guide(t+' timeline selected. Clues from other eras remain visible as faint echoes.');render()});
+let keys={};document.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='e')interact();if(e.key.toLowerCase()==='q')scan()});
+document.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+function loop(now){if(!gameOn||ended)return;let dt=Math.min((now-last)/1000,.05);last=now;elapsed+=dt;oxygen-=dt*1.35;scanCooldown-=dt;
+let speed=gear&&gear.name==='Scout'?27:22;let dx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),dy=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);let mag=Math.hypot(dx,dy)||1;player.x=Math.max(3,Math.min(97,player.x+dx/mag*speed*dt));player.y=Math.max(8,Math.min(94,player.y+dy/mag*speed*dt));
+let chase=dist(player,enemy)<55;let es=chase?12:4;enemy.x+=(player.x-enemy.x)/Math.max(1,dist(player,enemy))*es*dt;enemy.y+=(player.y-enemy.y)/Math.max(1,dist(player,enemy))*es*dt;
+if(dist(player,enemy)<4.5){end(false,'The guardian caught you. The temple’s current is too strong to escape.');return}
+if(oxygen<=0){end(false,'Oxygen depleted. The expedition ended before extraction.');return}
+if(items.filter(i=>i.effect==='artifact').length===3&&dist(player,{x:94,y:50})<7){end(true,'You escaped with all three artifacts and a complete temporal survey.');return}
+if(elapsed>1&&Math.floor(elapsed)%14===0&&Math.floor(elapsed)!==Math.floor(elapsed-dt)){guide(['ECHO: Current shift detected. Stay alert.','ECHO: Your oxygen is finite. Secure samples only when safe.','ECHO: Timeline changes reveal clues, not extra lives.'][Math.floor(elapsed/14)%3])}
+render();requestAnimationFrame(loop)}
+function end(win,msg){ended=true;gameOn=false;screen('result');$('resulttitle').textContent=win?'EXPEDITION SUCCESS':'EXPEDITION FAILED';$('resulttext').textContent=msg;$('resultmeta').textContent='Artifacts: '+items.filter(i=>i.effect==='artifact').length+'/3 · Research XP: '+xp+' · Time: '+Math.floor(elapsed)+'s · Loadout: '+(gear?gear.name:'—')}
+function drawMap(){let c=$('minimap'),ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle='#0b2b3b';ctx.fillRect(0,0,c.width,c.height);ctx.strokeStyle='#285365';for(let x=0;x<c.width;x+=30){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,c.height);ctx.stroke()}for(let y=0;y<c.height;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(c.width,y);ctx.stroke()}discoveries.forEach(d=>{if($('d-'+d.id)){ctx.fillStyle=d.effect==='artifact'?'#ffd27a':'#70f4e8';ctx.fillRect(d.x/100*c.width-3,d.y/100*c.height-3,6,6)}});ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(player.x/100*c.width,player.y/100*c.height,5,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ff6e6e';ctx.beginPath();ctx.arc(enemy.x/100*c.width,enemy.y/100*c.height,5,0,Math.PI*2);ctx.fill()}
+</script></body></html>
